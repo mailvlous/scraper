@@ -66,12 +66,27 @@
         
 import scrapy
 import re
+from scraper.items import BookItem
 
 
 class BookspiderSpider(scrapy.Spider):
     name = "bookspider"
     allowed_domains = ["books.toscrape.com"]
     start_urls = ["https://books.toscrape.com"]
+    
+    custom_settings = {
+        'FEEDS': {
+            'books.csv': {
+                'format': 'csv',
+                'overwrite': True
+            },
+            'title.json': {
+                'format': 'json',
+                'fields': ['title'],
+                'overwrite': True
+            }
+        }
+    }
 
     def parse(self, response):
         books = response.css("article.product_pod")
@@ -90,24 +105,26 @@ class BookspiderSpider(scrapy.Spider):
             yield response.follow(next_page, callback=self.parse)
 
     def parse_book(self, response):
-        stock_value = response.xpath('//table[1]/tr[6]/td/text()')
+        book_item = BookItem()
+        
+        
         # stock_value = [int(num) for num in re.findall(r'\((\d+)', stock_value.get())]
-        yield {
-            # "title": response.css("h1::text").get(),
-            # "category": response.xpath('//ul[@class="breadcrumb"]/li[3]/a/text()').get(),
-            # "price": response.css("p.price_color::text").get(),
-            # "description": response.css("article.product_page > p::text").get(),
-            # "url": response.url,
-            
-            # extract from table
-            
-            
-            
-            "UPC": response.xpath('//table[1]/tr[1]/td/text()').get(),
-            "Product Type": response.xpath('//table[1]/tr[2]/td/text()').get(),
-            "Stock": stock_value.get(),
-        }
 
+        book_item['title'] = response.css("h1::text").get(),
+        book_item['category'] = response.xpath('//ul[@class="breadcrumb"]/li[3]/a/text()').get(),
+        book_item['price'] = response.css("p.price_color::text").get(),
+        book_item['description'] = response.css("article.product_page > p::text").get(),
+        book_item['url'] = response.url,
+        
+        # extract from table
+        
+        
+        
+        book_item['upc'] = response.xpath('//table[1]/tr[1]/td/text()').get(),
+        book_item['product_type'] = response.xpath('//table[1]/tr[2]/td/text()').get(),
+        book_item['stock']  = response.xpath('//table[1]/tr[6]/td/text()').get()
+
+        yield book_item
 
         
         
